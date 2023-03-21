@@ -1,5 +1,6 @@
-const validator = require("validator");
+const fs = require("fs");
 const Article = require("../models/Article");
+const { validate } = require("../helpers/validate");
 
 const prueba = (req, res) => {
   return res.status(200).json({
@@ -28,27 +29,11 @@ const create = (req, res) => {
 
   //Validar datos
   try {
-    let title_validation =
-      !validator.isEmpty(parameters.title) &&
-      validator.isLength(parameters.title, { min: 5, max: undefined }); //true que esta bien
-
-    console.log(title_validation, "Si es true tiene informacion");
-
-    let content_validation = !validator.isEmpty(parameters.content);
-
-    console.log(content_validation, "Si es true tiene informacion");
-
-    console.log(!title_validation, "Mirando");
-    console.log(!content_validation, "Mirando");
-
-    if (!title_validation || !content_validation) {
-      console.log("holaaa");
-      throw new Error("No se ha validado la informacion");
-    }
+    validate(parameters);
   } catch (error) {
     return res.status(400).json({
       status: "error",
-      mensaje: "Faltan datos",
+      menssage: "Faltan datos por enviar",
     });
   }
 
@@ -143,30 +128,14 @@ const update = (req, res) => {
   let id = req.params.id;
   console.log(id);
   let parameters = req.body;
-  console.log(parameters);
+  console.log(parameters, "hellow");
 
   try {
-    let title_validation =
-      !validator.isEmpty(parameters.title) &&
-      validator.isLength(parameters.title, { min: 5, max: undefined }); //true que esta bien
-
-    console.log(title_validation, "Si es true tiene informacion");
-
-    let content_validation = !validator.isEmpty(parameters.content);
-
-    console.log(content_validation, "Si es true tiene informacion");
-
-    console.log(!title_validation, "Mirando");
-    console.log(!content_validation, "Mirando");
-
-    if (!title_validation || !content_validation) {
-      console.log("holaaa");
-      throw new Error("No se ha validado la informacion");
-    }
+    validate(parameters);
   } catch (error) {
     return res.status(400).json({
       status: "error",
-      mensaje: "Faltan datos",
+      menssage: "Faltan datos por enviar",
     });
   }
 
@@ -188,6 +157,53 @@ const update = (req, res) => {
       console.log(err);
     });
 };
+
+const upload = (req, res) => {
+  //Configure Multure
+
+  //Take fichero of the img
+  if (!req.file && !req.files) {
+    return res.status(404).json({
+      status: "error",
+      mensaje: "Peticion not validad",
+    });
+  }
+
+  //Name of the archive
+
+  let archive = req.file.originalname;
+
+  //Extension del archive
+  let archive_split = archive.split(".");
+  let extension = archive_split[1];
+
+  //check correct extension
+  if (
+    extension != "png" &&
+    extension != "jpg" &&
+    extension != "jpeg" &&
+    extension != "gif"
+  ) {
+    //Delete archive and give answer
+    fs.unlink(req.file.path, (error) => {
+      return res.status(400).json({
+        status: "error",
+        mensaje: "Format not validad",
+      });
+    });
+  } else {
+    //Its al ok, update the article
+
+    //Return answer
+
+    return res.status(200).json({
+      status: "succes",
+      extension,
+      files: req.file,
+    });
+  }
+};
+
 module.exports = {
   prueba,
   course,
@@ -196,4 +212,5 @@ module.exports = {
   findOne,
   deleteArticle,
   update,
+  upload,
 };
