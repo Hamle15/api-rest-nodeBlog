@@ -13,6 +13,8 @@ const app =
   express(); /*atras vez de esto se van a ejeutar metodos que son un midelWord, peticiones del sevidor*/
 const port = 3900;
 
+//dot env
+
 //Configuara Cors
 app.use(cors()); /*Ejecutarse antes de que se ejecute una ruta*/
 

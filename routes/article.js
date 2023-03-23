@@ -31,5 +31,7 @@ router.post(
   [uploads.single("file0")],
   ArticleControlle.upload
 );
+router.get("/image/:fichero", ArticleControlle.image);
+router.get("/seek/:search", ArticleControlle.seeker);
 
 module.exports = router;

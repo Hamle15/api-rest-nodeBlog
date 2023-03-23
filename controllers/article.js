@@ -1,6 +1,7 @@
 const fs = require("fs");
 const Article = require("../models/Article");
 const { validate } = require("../helpers/validate");
+const path = require("path");
 
 const prueba = (req, res) => {
   return res.status(200).json({
@@ -124,7 +125,7 @@ const deleteArticle = (req, res) => {
     });
 };
 
-const update = (req, res) => {
+const update = async (req, res) => {
   let id = req.params.id;
   console.log(id);
   let parameters = req.body;
@@ -139,23 +140,29 @@ const update = (req, res) => {
     });
   }
 
-  Article.findOneAndUpdate({ _id: id }, parameters, { new: true })
-    .then((articleUpdate) => {
-      if (!articleUpdate) {
-        return res.status(500).json({
-          status: "error",
-          mensaje: "Fail to update",
-        });
-      }
-
-      return res.status(200).json({
-        status: "succes",
-        articleUpdate,
+  try {
+    const articleUpdate = await Article.findOneAndUpdate(
+      { _id: id },
+      parameters,
+      { new: true }
+    );
+    if (!articleUpdate) {
+      return res.status(500).json({
+        status: "error",
+        mensaje: "Not finded article",
       });
-    })
-    .catch((err) => {
-      console.log(err);
+    }
+
+    return res.status(200).json({
+      status: "succes",
+      articleUpdate,
     });
+  } catch (error) {
+    return res.status(400).json({
+      status: "error",
+      mensaje: "Mistake",
+    });
+  }
 };
 
 const upload = (req, res) => {
@@ -194,14 +201,84 @@ const upload = (req, res) => {
   } else {
     //Its al ok, update the article
 
-    //Return answer
+    let articleId = req.params.id;
 
-    return res.status(200).json({
-      status: "succes",
-      extension,
-      files: req.file,
-    });
+    Article.findOneAndUpdate(
+      { _id: articleId },
+      { image: req.file.filename },
+      { new: true }
+    )
+      .then((articleUpdate) => {
+        if (!articleUpdate) {
+          return res.status(500).json({
+            status: "error",
+            mensaje: "fail to update",
+          });
+        }
+
+        return res.status(200).json({
+          status: "succes",
+          articleUpdate,
+          fichero: req.file,
+        });
+      })
+      .catch((err) => {
+        return res.status(500).json({
+          status: "error",
+          menssage: "Fail to update",
+        });
+      });
   }
+};
+
+const image = (req, res) => {
+  let fichero = req.params.fichero;
+  let rute_fisic = "./images/articles/" + fichero;
+
+  fs.stat(rute_fisic, (error, existe) => {
+    if (existe) {
+      return res.sendFile(path.resolve(rute_fisic));
+    } else {
+      return res.status(404).json({
+        status: "error",
+        mensaje: "The img is not exist",
+        existe,
+        fichero,
+        rute_fisic,
+      });
+    }
+  });
+};
+
+const seeker = (req, res) => {
+  //Sacar el string de busqueda
+  let search = req.params.search;
+
+  //Find OR
+  Article.find({
+    $or: [
+      { title: { $regex: search, $options: "i" } },
+      { content: { $regex: search, $options: "i" } },
+    ],
+  })
+    .sort({ date: -1 })
+    .exec()
+    .then((articleFind) => {
+      if (!articleFind || articleFind.length <= 0) {
+        return res.status(404).json({
+          status: "error",
+          mensaje: "Could not find a article",
+        });
+      } else {
+        return res.status(200).json({
+          status: "succes",
+          articles: articleFind,
+        });
+      }
+    }).catch;
+  // Orden
+  //Ejecutar Consulta
+  //Devolver el resultado
 };
 
 module.exports = {
@@ -213,4 +290,6 @@ module.exports = {
   deleteArticle,
   update,
   upload,
+  image,
+  seeker,
 };
